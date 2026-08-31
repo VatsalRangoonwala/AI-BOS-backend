@@ -1,0 +1,193 @@
+openapi: 3.1.0
+info:
+  title: AI-BOS API
+  version: 0.1.0
+  description: |
+    Foundation contract for the AI-BOS backend.
+
+    Clients may send `X-Request-Id`. The API preserves values containing only
+    letters, digits, `.`, `_`, and `-` up to 128 characters. Missing or invalid
+    values are replaced with a server-generated ID. Every response returns the
+    effective ID in the `X-Request-Id` header and in the JSON response envelope.
+servers:
+  - url: /
+paths:
+  /healthz:
+    get:
+      operationId: getHealth
+      summary: Check API process liveness
+      description: Reports whether the API process can serve HTTP requests. It does not check dependencies.
+      security: []
+      responses:
+        "200":
+          description: The API process is alive.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                data:
+                  status: ok
+                meta:
+                  requestId: req_0123456789abcdef0123456789abcdef
+  /readyz:
+    get:
+      operationId: getReadiness
+      summary: Check API dependency readiness
+      description: Reports ready only when both PostgreSQL and Redis respond within their configured health timeouts.
+      security: []
+      responses:
+        "200":
+          description: All required dependencies are reachable.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessResponse"
+              example:
+                data:
+                  status: ready
+                  dependencies:
+                    postgres: ok
+                    redis: ok
+                meta:
+                  requestId: req_0123456789abcdef0123456789abcdef
+        "503":
+          description: At least one required dependency is unavailable.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error:
+                  code: dependency_unavailable
+                  message: One or more required dependencies are unavailable
+                  requestId: req_0123456789abcdef0123456789abcdef
+                  details:
+                    dependencies:
+                      postgres: unavailable
+                      redis: ok
+components:
+  headers:
+    RequestId:
+      description: Correlates the response with API logs and traces.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: "^[A-Za-z0-9._-]+$"
+  schemas:
+    ResponseMeta:
+      type: object
+      additionalProperties: false
+      required:
+        - requestId
+      properties:
+        requestId:
+          type: string
+          minLength: 1
+          maxLength: 128
+    StandardSuccessResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - data
+        - meta
+      properties:
+        data: {}
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    HealthData:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          const: ok
+    HealthResponse:
+      allOf:
+        - $ref: "#/components/schemas/StandardSuccessResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/HealthData"
+    DependencyStatuses:
+      type: object
+      additionalProperties: false
+      required:
+        - postgres
+        - redis
+      properties:
+        postgres:
+          $ref: "#/components/schemas/DependencyStatus"
+        redis:
+          $ref: "#/components/schemas/DependencyStatus"
+    DependencyStatus:
+      type: string
+      enum:
+        - ok
+        - unavailable
+    ReadinessData:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+        - dependencies
+      properties:
+        status:
+          type: string
+          const: ready
+        dependencies:
+          $ref: "#/components/schemas/DependencyStatuses"
+    ReadinessResponse:
+      allOf:
+        - $ref: "#/components/schemas/StandardSuccessResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/ReadinessData"
+    ErrorDetail:
+      type: object
+      additionalProperties: true
+    StandardError:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - message
+        - requestId
+      properties:
+        code:
+          type: string
+          description: Stable machine-readable error code.
+        message:
+          type: string
+          description: Human-safe message that does not expose internal errors or secrets.
+        fieldErrors:
+          type: object
+          additionalProperties:
+            type: string
+        requestId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        details:
+          $ref: "#/components/schemas/ErrorDetail"
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          $ref: "#/components/schemas/StandardError"

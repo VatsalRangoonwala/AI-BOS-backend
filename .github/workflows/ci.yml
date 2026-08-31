@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: 1.27.0
+
+jobs:
+  quality:
+    name: Format, lint, unit test, and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Check formatting
+        run: make fmt-check
+      - name: Lint
+        run: make lint
+      - name: Unit tests
+        run: make test
+      - name: Build binaries
+        run: make build
+
+  contract:
+    name: Validate OpenAPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Lint OpenAPI
+        run: make openapi-lint
+
+  integration:
+    name: Integration tests and migrations
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: aibos
+          POSTGRES_PASSWORD: aibos_local
+          POSTGRES_DB: aibos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aibos -d aibos"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://aibos:aibos_local@localhost:5432/aibos?sslmode=disable
+      TEST_DATABASE_URL: postgres://aibos:aibos_local@localhost:5432/aibos?sslmode=disable
+      TEST_REDIS_URL: redis://localhost:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Apply migrations from empty database
+        run: make migrate-up
+      - name: Run integration tests
+        run: make test-integration
+
+  security:
+    name: Dependency and security checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Verify modules and scan Go vulnerabilities
+        run: make security
+      - name: Scan repository for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Review dependency changes
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@v4

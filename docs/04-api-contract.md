@@ -33,7 +33,18 @@ The canonical machine-readable contract will live at `api/openapi.yaml`. This do
 }
 ```
 
-Use `400` malformed input, `401` unauthenticated, `403` unauthorized/plan denied, `404` not found in the active tenant, `409` state/idempotency conflict, `422` domain validation, `429` rate limit, `500` unexpected error, and `503` dependency unavailable.
+Use `400` malformed input, `401` unauthenticated, `403` unauthorized/plan denied, `404` not found in the active tenant, `409` state/idempotency conflict, `413` payload too large, `422` domain validation, `429` rate limit, `500` unexpected error, and `503` dependency unavailable.
+
+## Operational endpoints
+
+The unversioned operational endpoints are defined in `api/openapi.yaml` and require no authentication:
+
+```text
+GET /healthz   # process liveness only
+GET /readyz    # PostgreSQL and Redis readiness
+```
+
+Both return the effective request ID in `X-Request-Id` and the JSON envelope. `/readyz` returns `503 dependency_unavailable` when either dependency fails its bounded health check. The response identifies dependency status without exposing connection errors, hosts, credentials, or other secrets.
 
 ## Initial endpoint inventory
 
@@ -146,4 +157,3 @@ Use secure cookies for browser refresh sessions. Access tokens may be short-live
 3. Generate Go server interfaces and TypeScript client types.
 4. Run contract tests in CI against handlers and a frontend fixture.
 5. Treat breaking changes as a versioned migration, not an incidental handler edit.
-
