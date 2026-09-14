@@ -1,3 +1,5 @@
+include .env
+
 GO ?= go
 BIN_DIR ?= bin
 GOOSE_VERSION := v3.27.3
@@ -5,7 +7,6 @@ GOOSE_BUILD_TAGS := no_clickhouse no_libsql no_mssql no_mysql no_sqlite3 no_vert
 GOLANGCI_LINT_VERSION := v2.13.2
 GOVULNCHECK_VERSION := v1.7.0
 REDOCLY_VERSION := 2.49.0
-DATABASE_URL ?= postgres://aibos:aibos_local@localhost:5432/aibos?sslmode=disable
 
 .PHONY: fmt fmt-check lint test test-integration build docker-up docker-down migrate-up openapi-lint security clean
 
@@ -32,6 +33,9 @@ build:
 
 docker-up:
 	docker compose up -d --build
+
+docker-up-no-build:
+	docker compose up -d --no-build
 
 docker-down:
 	docker compose down
