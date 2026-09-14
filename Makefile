@@ -1,4 +1,4 @@
-include .env
+include .env.example
 
 GO ?= go
 BIN_DIR ?= bin
