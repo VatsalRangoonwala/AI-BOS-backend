@@ -7,6 +7,9 @@ GOVULNCHECK_VERSION := v1.7.0
 REDOCLY_VERSION := 2.49.0
 DATABASE_URL ?= postgres://aibos:aibos_local@localhost:5432/aibos?sslmode=disable
 
+# for ubuntu system
+LOCAL_DATABASE_URL ?= postgres://aibos:aibos_local@localhost:5433/aibos?sslmode=disable
+
 .PHONY: fmt fmt-check lint test test-integration build docker-up docker-down migrate-up openapi-lint security clean
 
 fmt:
@@ -33,11 +36,18 @@ build:
 docker-up:
 	docker compose up -d --build
 
+docker-up-no-build:
+	docker compose up -d --no-build
+
 docker-down:
 	docker compose down
 
 migrate-up:
 	$(GO) run -tags='$(GOOSE_BUILD_TAGS)' github.com/pressly/goose/v3/cmd/goose@$(GOOSE_VERSION) -dir migrations postgres "$(DATABASE_URL)" up
+
+# for ubuntu system
+local-migrate-up:
+	$(GO) run -tags='$(GOOSE_BUILD_TAGS)' github.com/pressly/goose/v3/cmd/goose@$(GOOSE_VERSION) -dir migrations postgres "$(LOCAL_DATABASE_URL)" up
 
 openapi-lint:
 	npx --yes @redocly/cli@$(REDOCLY_VERSION) lint api/openapi.yaml
