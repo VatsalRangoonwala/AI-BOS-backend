@@ -1,14 +1,14 @@
 openapi: 3.1.0
 info:
   title: AI-BOS API
-  version: 0.1.0
+  version: 0.2.0
   description: |
-    Foundation contract for the AI-BOS backend.
+    Core REST API contract for the AI Business Operating System (AI-BOS).
 
-    Clients may send `X-Request-Id`. The API preserves values containing only
-    letters, digits, `.`, `_`, and `-` up to 128 characters. Missing or invalid
-    values are replaced with a server-generated ID. Every response returns the
-    effective ID in the `X-Request-Id` header and in the JSON response envelope.
+    Clients may send `X-Request-Id`. The API preserves valid values (letters,
+    digits, '.', '_', and '-' up to 128 characters) or generates a unique ID.
+    Every response returns the effective ID in the `X-Request-Id` header and
+    in the response JSON envelope.
 servers:
   - url: /
 paths:
@@ -33,6 +33,7 @@ paths:
                   status: ok
                 meta:
                   requestId: req_0123456789abcdef0123456789abcdef
+
   /readyz:
     get:
       operationId: getReadiness
@@ -75,7 +76,430 @@ paths:
                     dependencies:
                       postgres: unavailable
                       redis: ok
+
+  /api/v1/auth/register:
+    post:
+      operationId: register
+      summary: Register a new user account
+      description: Registers a user with email and password, creates an optional initial business, and returns auth tokens.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User registered successfully.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/auth/login:
+    post:
+      operationId: login
+      summary: Authenticate with email and password
+      description: Validates user credentials and issues an access token along with a rotating refresh token.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Authentication successful.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /api/v1/auth/refresh:
+    post:
+      operationId: refreshTokens
+      summary: Refresh access token
+      description: Exchanges a valid rotating refresh token (from cookie or payload) for a new access token and rotated refresh token.
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: Tokens refreshed successfully.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      summary: Revoke active session
+      description: Revokes the current refresh session and clears session cookies.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Logged out successfully.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessageResponse"
+
+  /api/v1/auth/verify-email:
+    post:
+      operationId: verifyEmail
+      summary: Verify user email address
+      description: Consumes an email verification token and marks the account as verified.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyEmailRequest"
+      responses:
+        "200":
+          description: Email verified successfully.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessageResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+
+  /api/v1/auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      summary: Request password reset link
+      description: Sends a password reset token to the registered email address if found.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+      responses:
+        "200":
+          description: Password reset link dispatched if account exists.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessageResponse"
+
+  /api/v1/auth/reset-password:
+    post:
+      operationId: resetPassword
+      summary: Reset password with token
+      description: Updates password using a valid reset token and revokes all active sessions.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "200":
+          description: Password reset successfully.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessageResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+
+  /api/v1/me:
+    get:
+      operationId: getCurrentUser
+      summary: Get current authenticated user profile and memberships
+      description: Returns the authenticated user record and all businesses where the user has active membership.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Authenticated user details.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /api/v1/businesses:
+    get:
+      operationId: listBusinesses
+      summary: List user businesses
+      description: Returns all businesses the authenticated user belongs to.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of accessible businesses.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessListResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+    post:
+      operationId: createBusiness
+      summary: Create a new business tenant
+      description: Creates a new business tenant and assigns the creator as owner.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBusinessRequest"
+      responses:
+        "201":
+          description: Business tenant created.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/businesses/{businessId}:
+    parameters:
+      - $ref: "#/components/parameters/BusinessId"
+    get:
+      operationId: getBusiness
+      summary: Get business details
+      description: Returns detailed business settings for a tenant where the caller is an active member.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Business tenant details.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessDetailResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    patch:
+      operationId: updateBusiness
+      summary: Update business settings
+      description: Modifies business details. Requires owner role in the tenant.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBusinessRequest"
+      responses:
+        "200":
+          description: Business updated successfully.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/v1/businesses/{businessId}/members:
+    parameters:
+      - $ref: "#/components/parameters/BusinessId"
+    get:
+      operationId: listBusinessMembers
+      summary: List members of a business
+      description: Returns all active and invited members of the business tenant.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of team members.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberListResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+
+  /api/v1/businesses/{businessId}/invitations:
+    parameters:
+      - $ref: "#/components/parameters/BusinessId"
+    post:
+      operationId: inviteMember
+      summary: Invite a new user to the business
+      description: Creates an invitation for a member with a specified role. Requires owner role.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InviteMemberRequest"
+      responses:
+        "201":
+          description: Invitation created.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+
+  /api/v1/businesses/{businessId}/members/{memberId}:
+    parameters:
+      - $ref: "#/components/parameters/BusinessId"
+      - name: memberId
+        in: path
+        required: true
+        description: Unique ID of the membership record.
+        schema:
+          type: string
+          format: uuid
+    patch:
+      operationId: updateMember
+      summary: Update member role or status
+      description: Updates member permissions or status. Requires owner role.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMemberRequest"
+      responses:
+        "200":
+          description: Member record updated.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberDetailResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    delete:
+      operationId: removeMember
+      summary: Remove member from business
+      description: Revokes membership from the tenant. Requires owner role.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Member removed successfully.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessageResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token obtained via /api/v1/auth/login or /api/v1/auth/register.
+
   headers:
     RequestId:
       description: Correlates the response with API logs and traces.
@@ -84,6 +508,55 @@ components:
         minLength: 1
         maxLength: 128
         pattern: "^[A-Za-z0-9._-]+$"
+
+  parameters:
+    BusinessId:
+      name: businessId
+      in: path
+      required: true
+      description: Unique ID of the business tenant.
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequestError:
+      description: Malformed request or unparseable input.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    UnauthorizedError:
+      description: Authentication is missing, expired, or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ForbiddenError:
+      description: The caller lacks permissions or membership in this tenant.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFoundError:
+      description: The requested resource was not found within the active tenant.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ConflictError:
+      description: State conflict, such as email already registered or duplicate membership.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ValidationError:
+      description: Semantic validation failed on one or more request fields.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
   schemas:
     ResponseMeta:
       type: object
@@ -95,6 +568,7 @@ components:
           type: string
           minLength: 1
           maxLength: 128
+
     StandardSuccessResponse:
       type: object
       additionalProperties: false
@@ -105,6 +579,7 @@ components:
         data: {}
         meta:
           $ref: "#/components/schemas/ResponseMeta"
+
     HealthData:
       type: object
       additionalProperties: false
@@ -114,6 +589,7 @@ components:
         status:
           type: string
           const: ok
+
     HealthResponse:
       allOf:
         - $ref: "#/components/schemas/StandardSuccessResponse"
@@ -121,6 +597,7 @@ components:
           properties:
             data:
               $ref: "#/components/schemas/HealthData"
+
     DependencyStatuses:
       type: object
       additionalProperties: false
@@ -132,11 +609,13 @@ components:
           $ref: "#/components/schemas/DependencyStatus"
         redis:
           $ref: "#/components/schemas/DependencyStatus"
+
     DependencyStatus:
       type: string
       enum:
         - ok
         - unavailable
+
     ReadinessData:
       type: object
       additionalProperties: false
@@ -149,6 +628,7 @@ components:
           const: ready
         dependencies:
           $ref: "#/components/schemas/DependencyStatuses"
+
     ReadinessResponse:
       allOf:
         - $ref: "#/components/schemas/StandardSuccessResponse"
@@ -156,9 +636,11 @@ components:
           properties:
             data:
               $ref: "#/components/schemas/ReadinessData"
+
     ErrorDetail:
       type: object
       additionalProperties: true
+
     StandardError:
       type: object
       additionalProperties: false
@@ -183,6 +665,7 @@ components:
           maxLength: 128
         details:
           $ref: "#/components/schemas/ErrorDetail"
+
     ErrorResponse:
       type: object
       additionalProperties: false
@@ -191,3 +674,412 @@ components:
       properties:
         error:
           $ref: "#/components/schemas/StandardError"
+
+    MessageData:
+      type: object
+      additionalProperties: false
+      required:
+        - message
+      properties:
+        message:
+          type: string
+
+    SuccessMessageResponse:
+      allOf:
+        - $ref: "#/components/schemas/StandardSuccessResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/MessageData"
+
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+        - password
+        - name
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        businessName:
+          type: string
+          minLength: 1
+          maxLength: 120
+
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    RefreshRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        refreshToken:
+          type: string
+
+    VerifyEmailRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          minLength: 1
+
+    ForgotPasswordRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+
+    ResetPasswordRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - token
+        - newPassword
+      properties:
+        token:
+          type: string
+          minLength: 1
+        newPassword:
+          type: string
+          minLength: 8
+          maxLength: 128
+
+    UserData:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - email
+        - name
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        status:
+          type: string
+          enum: [active, unverified, suspended]
+        verifiedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AuthTokensData:
+      type: object
+      additionalProperties: false
+      required:
+        - accessToken
+        - tokenType
+        - expiresIn
+        - user
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+          description: Included in JSON when cookie transport is not active.
+        tokenType:
+          type: string
+          example: Bearer
+        expiresIn:
+          type: integer
+          description: Expiry duration in seconds.
+          example: 900
+        user:
+          $ref: "#/components/schemas/UserData"
+
+    AuthResponse:
+      allOf:
+        - $ref: "#/components/schemas/StandardSuccessResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/AuthTokensData"
+
+    UserMembershipSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - businessId
+        - businessName
+        - role
+        - status
+      properties:
+        businessId:
+          type: string
+          format: uuid
+        businessName:
+          type: string
+        role:
+          type: string
+          enum: [owner, staff, admin]
+        status:
+          type: string
+          enum: [active, invited, suspended]
+
+    MeData:
+      type: object
+      additionalProperties: false
+      required:
+        - user
+        - memberships
+      properties:
+        user:
+          $ref: "#/components/schemas/UserData"
+        memberships:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserMembershipSummary"
+
+    MeResponse:
+      allOf:
+        - $ref: "#/components/schemas/StandardSuccessResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/MeData"
+
+    BusinessData:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - name
+        - timezone
+        - currency
+        - invoicePrefix
+        - invoiceSequence
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        legalName:
+          type:
+            - string
+            - "null"
+        phone:
+          type:
+            - string
+            - "null"
+        address:
+          type:
+            - string
+            - "null"
+        timezone:
+          type: string
+          example: Asia/Kolkata
+        currency:
+          type: string
+          example: INR
+        invoicePrefix:
+          type: string
+          example: INV-
+        invoiceSequence:
+          type: integer
+          example: 1001
+        status:
+          type: string
+          enum: [active, suspended]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateBusinessRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        legalName:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 30
+        address:
+          type: string
+          maxLength: 500
+        timezone:
+          type: string
+          maxLength: 50
+          default: Asia/Kolkata
+        currency:
+          type: string
+          maxLength: 3
+          default: INR
+        invoicePrefix:
+          type: string
+          maxLength: 10
+          default: INV-
+
+    UpdateBusinessRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        legalName:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 30
+        address:
+          type: string
+          maxLength: 500
+        timezone:
+          type: string
+          maxLength: 50
+        invoicePrefix:
+          type: string
+          maxLength: 10
+
+    BusinessDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/StandardSuccessResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/BusinessData"
+
+    BusinessListResponse:
+      allOf:
+        - $ref: "#/components/schemas/StandardSuccessResponse"
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/BusinessData"
+
+    MemberData:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - businessId
+        - userId
+        - role
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        businessId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [owner, staff, admin]
+        status:
+          type: string
+          enum: [active, invited, suspended]
+        user:
+          $ref: "#/components/schemas/UserData"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    InviteMemberRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+        - role
+      properties:
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [owner, staff, admin]
+
+    UpdateMemberRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        role:
+          type: string
+          enum: [owner, staff, admin]
+        status:
+          type: string
+          enum: [active, suspended]
+
+    MemberDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/StandardSuccessResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/MemberData"
+
+    MemberListResponse:
+      allOf:
+        - $ref: "#/components/schemas/StandardSuccessResponse"
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/MemberData"

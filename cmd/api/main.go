@@ -3,15 +3,20 @@ package main
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/VatsalRangoonwala/AI-BOS-backend/internal/audit"
+	"github.com/VatsalRangoonwala/AI-BOS-backend/internal/businesses"
+	"github.com/VatsalRangoonwala/AI-BOS-backend/internal/identity"
 	"github.com/VatsalRangoonwala/AI-BOS-backend/internal/platform/config"
 	"github.com/VatsalRangoonwala/AI-BOS-backend/internal/platform/httpserver"
 	"github.com/VatsalRangoonwala/AI-BOS-backend/internal/platform/logging"
 	"github.com/VatsalRangoonwala/AI-BOS-backend/internal/platform/observability"
 	"github.com/VatsalRangoonwala/AI-BOS-backend/internal/platform/postgres"
+	"github.com/VatsalRangoonwala/AI-BOS-backend/internal/platform/ratelimit"
 	redisstore "github.com/VatsalRangoonwala/AI-BOS-backend/internal/platform/redis"
 )
 
@@ -63,6 +68,29 @@ func run(bootstrapLogger *slog.Logger) error {
 		}
 	}()
 
+	auditRepo := audit.NewRepository(database.RawPool())
+	rateLimiter := ratelimit.New(cache.RawClient())
+
+	bizRepo := businesses.NewRepository(database.RawPool())
+	bizService := businesses.NewService(bizRepo, auditRepo)
+	bizHandler := businesses.NewHandler(bizService)
+
+	userRepo := identity.NewRepository(database.RawPool())
+	identityService := identity.NewService(
+		userRepo,
+		bizRepo,
+		auditRepo,
+		cfg.Auth.JWTSecret,
+		cfg.Auth.AccessTokenTTL,
+		cfg.Auth.RefreshTokenTTL,
+	)
+	identityHandler := identity.NewHandler(
+		identityService,
+		bizService,
+		rateLimiter,
+		cfg.App.Environment == config.EnvironmentProduction,
+	)
+
 	server := httpserver.New(httpserver.Config{
 		Addr:              cfg.HTTP.Addr,
 		FrontendOrigins:   cfg.HTTP.FrontendOrigins,
@@ -74,9 +102,13 @@ func run(bootstrapLogger *slog.Logger) error {
 		ShutdownTimeout:   cfg.HTTP.ShutdownTimeout,
 		MaxBodyBytes:      cfg.HTTP.MaxBodyBytes,
 		Production:        cfg.App.Environment == config.EnvironmentProduction,
+		JWTSecret:         cfg.Auth.JWTSecret,
 	}, logger, httpserver.Dependencies{
-		Postgres: database,
-		Redis:    cache,
+		Postgres:   database,
+		Redis:      cache,
+		Identity:   identityHandler.Routes(cfg.Auth.JWTSecret),
+		Businesses: bizHandler.Routes(cfg.Auth.JWTSecret),
+		Me:         http.HandlerFunc(identityHandler.GetMe),
 	}, observability.NoopHooks())
 
 	logger.Info("api starting", "addr", cfg.HTTP.Addr)

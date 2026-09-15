@@ -25,6 +25,7 @@ type Pool interface {
 
 type Client struct {
 	pool          Pool
+	rawPool       *pgxpool.Pool
 	healthTimeout time.Duration
 }
 
@@ -43,7 +44,11 @@ func Open(ctx context.Context, cfg Config) (*Client, error) {
 	if err != nil {
 		return nil, errors.New("initialize PostgreSQL pool")
 	}
-	return New(pool, cfg.HealthTimeout), nil
+	return &Client{pool: pool, rawPool: pool, healthTimeout: cfg.HealthTimeout}, nil
+}
+
+func (client *Client) RawPool() *pgxpool.Pool {
+	return client.rawPool
 }
 
 func New(pool Pool, healthTimeout time.Duration) *Client {

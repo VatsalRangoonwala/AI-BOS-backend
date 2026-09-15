@@ -26,20 +26,31 @@ type errorResponse struct {
 	Error errorBody `json:"error"`
 }
 
-func writeSuccess(response http.ResponseWriter, request *http.Request, status int, data any) {
+// RespondJSON writes a standardized success JSON envelope.
+func RespondJSON(response http.ResponseWriter, request *http.Request, status int, data any) {
 	writeJSON(response, status, successResponse{
 		Data: data,
 		Meta: responseMeta{RequestID: RequestIDFromContext(request.Context())},
 	})
 }
 
-func writeError(response http.ResponseWriter, request *http.Request, status int, code, message string, details any) {
+// RespondError writes a standardized error JSON envelope.
+func RespondError(response http.ResponseWriter, request *http.Request, status int, code, message string, details any, fieldErrors map[string]string) {
 	writeJSON(response, status, errorResponse{Error: errorBody{
-		Code:      code,
-		Message:   message,
-		RequestID: RequestIDFromContext(request.Context()),
-		Details:   details,
+		Code:        code,
+		Message:     message,
+		FieldErrors: fieldErrors,
+		RequestID:   RequestIDFromContext(request.Context()),
+		Details:     details,
 	}})
+}
+
+func writeSuccess(response http.ResponseWriter, request *http.Request, status int, data any) {
+	RespondJSON(response, request, status, data)
+}
+
+func writeError(response http.ResponseWriter, request *http.Request, status int, code, message string, details any) {
+	RespondError(response, request, status, code, message, details, nil)
 }
 
 func writeJSON(response http.ResponseWriter, status int, body any) {

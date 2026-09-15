@@ -23,6 +23,7 @@ type Backend interface {
 
 type Client struct {
 	backend       Backend
+	rawClient     *redisclient.Client
 	healthTimeout time.Duration
 }
 
@@ -39,7 +40,16 @@ func Open(cfg Config) (*Client, error) {
 	options.ReadTimeout = cfg.ReadTimeout
 	options.WriteTimeout = cfg.WriteTimeout
 
-	return New(&backend{client: redisclient.NewClient(options)}, cfg.HealthTimeout), nil
+	rClient := redisclient.NewClient(options)
+	return &Client{
+		backend:       &backend{client: rClient},
+		rawClient:     rClient,
+		healthTimeout: cfg.HealthTimeout,
+	}, nil
+}
+
+func (client *Client) RawClient() *redisclient.Client {
+	return client.rawClient
 }
 
 func New(backend Backend, healthTimeout time.Duration) *Client {

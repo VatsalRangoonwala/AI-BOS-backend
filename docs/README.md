@@ -9,13 +9,14 @@ This directory is the engineering plan for turning the AI-BOS frontend from mock
 | Area | Status |
 | --- | --- |
 | Product scope | Drafted from `AI-BOS.md` |
-| Architecture | Proposed |
-| Database model | Proposed |
+| Architecture | Implemented |
+| Database model | Implemented (Foundation & Identity/Tenancy migrations) |
 | Backend foundation | Implemented |
-| REST contract | Health/readiness foundation implemented; domain APIs remain proposed |
+| REST contract | OpenAPI 3.1: Health, readiness, auth, identity, business & membership APIs implemented |
+| Identity & Tenancy | Implemented (Argon2id, rotating refresh tokens, RBAC, tenant isolation, rate limiting, audit logs) |
+| Customers & Catalog | Next in Phase 2 |
 | AI assistant | Proposed |
-| Operations | Proposed |
-| Domain implementation | Not started |
+| Operations | Containerized & healthy |
 
 ## Reading order
 

@@ -25,6 +25,7 @@ type Config struct {
 	ShutdownTimeout   time.Duration
 	MaxBodyBytes      int64
 	Production        bool
+	JWTSecret         []byte
 }
 
 type Server struct {
@@ -60,6 +61,24 @@ func New(cfg Config, logger *slog.Logger, dependencies Dependencies, hooks obser
 
 	router.Get("/healthz", healthHandler)
 	router.Get("/readyz", readinessHandler(dependencies, hooks.Metrics, logger))
+
+	if dependencies.Identity != nil || dependencies.Businesses != nil || dependencies.Me != nil {
+		router.Route("/api/v1", func(api chi.Router) {
+			if dependencies.Identity != nil {
+				api.Mount("/auth", dependencies.Identity)
+			}
+			if dependencies.Businesses != nil {
+				api.Mount("/businesses", dependencies.Businesses)
+			}
+			if dependencies.Me != nil {
+				api.Group(func(meRouter chi.Router) {
+					meRouter.Use(Authenticate(cfg.JWTSecret))
+					meRouter.Use(RequireAuth)
+					meRouter.Get("/me", dependencies.Me)
+				})
+			}
+		})
+	}
 	router.NotFound(func(response http.ResponseWriter, request *http.Request) {
 		writeError(response, request, http.StatusNotFound, "not_found", "The requested resource was not found", nil)
 	})

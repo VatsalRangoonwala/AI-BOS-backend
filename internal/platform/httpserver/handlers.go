@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/VatsalRangoonwala/AI-BOS-backend/internal/platform/observability"
+	"github.com/go-chi/chi/v5"
 )
 
 type HealthChecker interface {
@@ -14,8 +15,11 @@ type HealthChecker interface {
 }
 
 type Dependencies struct {
-	Postgres HealthChecker
-	Redis    HealthChecker
+	Postgres   HealthChecker
+	Redis      HealthChecker
+	Identity   chi.Router
+	Businesses chi.Router
+	Me         http.HandlerFunc
 }
 
 type healthData struct {

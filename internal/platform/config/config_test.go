@@ -47,7 +47,7 @@ func TestLoadFromRejectsMissingProductionConfiguration(t *testing.T) {
 	if err == nil {
 		t.Fatal("LoadFrom() error = nil, want validation error")
 	}
-	for _, key := range []string{"DATABASE_URL", "REDIS_URL", "FRONTEND_ORIGINS"} {
+	for _, key := range []string{"DATABASE_URL", "REDIS_URL", "FRONTEND_ORIGINS", "JWT_SECRET"} {
 		if !strings.Contains(err.Error(), key) {
 			t.Errorf("error %q does not mention %s", err, key)
 		}
@@ -62,6 +62,7 @@ func TestLoadFromAcceptsSecureProductionConfiguration(t *testing.T) {
 		"DATABASE_URL":     "postgres://aibos:secret@db.example.com:5432/aibos?sslmode=verify-full",
 		"REDIS_URL":        "rediss://:secret@redis.example.com:6379/0",
 		"FRONTEND_ORIGINS": "https://app.example.com,https://admin.example.com",
+		"JWT_SECRET":       "a-secure-production-jwt-secret-key-32-chars-long",
 		"DB_POOL_MIN":      "4",
 		"DB_POOL_MAX":      "40",
 	}))

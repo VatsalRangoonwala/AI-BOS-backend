@@ -25,6 +25,13 @@ type Config struct {
 	Postgres PostgresConfig
 	Redis    RedisConfig
 	Worker   WorkerConfig
+	Auth     AuthConfig
+}
+
+type AuthConfig struct {
+	JWTSecret       []byte
+	AccessTokenTTL  time.Duration
+	RefreshTokenTTL time.Duration
 }
 
 type AppConfig struct {
@@ -105,6 +112,16 @@ func LoadFrom(lookup LookupFunc) (Config, error) {
 		environment,
 		&validationErrors,
 	)
+	jwtSecretValue := requiredOutsideLocal(
+		lookup,
+		"JWT_SECRET",
+		"aibos-local-development-secret-key-32b-min",
+		environment,
+		&validationErrors,
+	)
+	if environment == EnvironmentProduction && (len(jwtSecretValue) < 32 || jwtSecretValue == "aibos-local-development-secret-key-32b-min") {
+		validationErrors = append(validationErrors, fmt.Errorf("JWT_SECRET must be at least 32 characters in production"))
+	}
 
 	cfg := Config{
 		App: AppConfig{
@@ -140,6 +157,11 @@ func LoadFrom(lookup LookupFunc) (Config, error) {
 		},
 		Worker: WorkerConfig{
 			HealthInterval: parseDuration(lookup, "WORKER_HEALTH_INTERVAL", "30s", &validationErrors),
+		},
+		Auth: AuthConfig{
+			JWTSecret:       []byte(jwtSecretValue),
+			AccessTokenTTL:  parseDuration(lookup, "ACCESS_TOKEN_TTL", "15m", &validationErrors),
+			RefreshTokenTTL: parseDuration(lookup, "REFRESH_TOKEN_TTL", "168h", &validationErrors),
 		},
 	}
 
