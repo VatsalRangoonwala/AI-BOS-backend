@@ -10,7 +10,7 @@ DATABASE_URL ?= postgres://aibos:aibos_local@localhost:5432/aibos?sslmode=disabl
 # for ubuntu system
 LOCAL_DATABASE_URL ?= postgres://aibos:aibos_local@localhost:5433/aibos?sslmode=disable
 
-.PHONY: fmt fmt-check lint test test-integration build docker-up docker-down migrate-up openapi-lint security clean
+.PHONY: fmt fmt-check lint test test-integration build docker-up docker-up-build docker-up-no-build docker-down migrate-up openapi-lint security clean
 
 fmt:
 	$(GO) fmt ./...
@@ -35,6 +35,11 @@ build:
 
 docker-up:
 	docker compose up -d --build
+
+docker-up-build:
+	docker build --network host --build-arg TARGET=api -t ai-bos-api .
+	docker build --network host --build-arg TARGET=worker -t ai-bos-worker .
+	docker compose up -d --no-build
 
 docker-up-no-build:
 	docker compose up -d --no-build
