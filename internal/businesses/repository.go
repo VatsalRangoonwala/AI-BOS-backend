@@ -225,7 +225,7 @@ func (r *Repository) ListMembers(ctx context.Context, businessID string, callerU
 
 	query := `
 		SELECT m.id, m.business_id, m.user_id, m.role, m.status, m.created_at, m.updated_at,
-		       u.id, u.email, u.name, u.status
+		       u.id, u.email, u.full_name, u.status
 		FROM memberships m
 		INNER JOIN users u ON u.id = m.user_id
 		WHERE m.business_id = $1
@@ -250,7 +250,7 @@ func (r *Repository) ListMembers(ctx context.Context, businessID string, callerU
 			&m.UpdatedAt,
 			&m.User.ID,
 			&m.User.Email,
-			&m.User.Name,
+			&m.User.FullName,
 			&m.User.Status,
 		)
 		if err != nil {
@@ -273,8 +273,8 @@ func (r *Repository) InviteMember(ctx context.Context, businessID string, caller
 
 	// Find or identify user by email
 	var targetUser UserSummary
-	findUserQuery := `SELECT id, email, name, status FROM users WHERE LOWER(email) = LOWER($1)`
-	err = r.pool.QueryRow(ctx, findUserQuery, inviteeEmail).Scan(&targetUser.ID, &targetUser.Email, &targetUser.Name, &targetUser.Status)
+	findUserQuery := `SELECT id, email, full_name, status FROM users WHERE LOWER(email) = LOWER($1)`
+	err = r.pool.QueryRow(ctx, findUserQuery, inviteeEmail).Scan(&targetUser.ID, &targetUser.Email, &targetUser.FullName, &targetUser.Status)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, errors.New("user with this email does not exist yet; user must register before invitation")
@@ -323,14 +323,14 @@ func (r *Repository) UpdateMember(ctx context.Context, businessID string, caller
 	var current MemberDetail
 	fetchQuery := `
 		SELECT m.id, m.business_id, m.user_id, m.role, m.status, m.created_at, m.updated_at,
-		       u.id, u.email, u.name, u.status
+		       u.id, u.email, u.full_name, u.status
 		FROM memberships m
 		INNER JOIN users u ON u.id = m.user_id
 		WHERE m.id = $1 AND m.business_id = $2
 	`
 	err = r.pool.QueryRow(ctx, fetchQuery, memberID, businessID).Scan(
 		&current.ID, &current.BusinessID, &current.UserID, &current.Role, &current.Status, &current.CreatedAt, &current.UpdatedAt,
-		&current.User.ID, &current.User.Email, &current.User.Name, &current.User.Status,
+		&current.User.ID, &current.User.Email, &current.User.FullName, &current.User.Status,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

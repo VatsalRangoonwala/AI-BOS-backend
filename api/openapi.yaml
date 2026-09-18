@@ -698,7 +698,6 @@ components:
       required:
         - email
         - password
-        - name
       properties:
         email:
           type: string
@@ -708,10 +707,13 @@ components:
           type: string
           minLength: 8
           maxLength: 128
-        name:
+        fullName:
           type: string
           minLength: 1
           maxLength: 120
+        mobile:
+          type: string
+          maxLength: 30
         businessName:
           type: string
           minLength: 1
@@ -778,7 +780,7 @@ components:
       required:
         - id
         - email
-        - name
+        - fullName
         - status
         - createdAt
       properties:
@@ -788,12 +790,21 @@ components:
         email:
           type: string
           format: email
-        name:
+        fullName:
           type: string
+        mobile:
+          type:
+            - string
+            - "null"
         status:
           type: string
           enum: [active, unverified, suspended]
         verifiedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+        emailVerifiedAt:
           type:
             - string
             - "null"

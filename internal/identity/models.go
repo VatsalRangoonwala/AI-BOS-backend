@@ -16,14 +16,16 @@ var (
 )
 
 type User struct {
-	ID           string     `json:"id"`
-	Email        string     `json:"email"`
-	PasswordHash string     `json:"-"`
-	Name         string     `json:"name"`
-	Status       string     `json:"status"` // "active", "unverified", "suspended"
-	VerifiedAt   *time.Time `json:"verifiedAt"`
-	CreatedAt    time.Time  `json:"createdAt"`
-	UpdatedAt    time.Time  `json:"updatedAt"`
+	ID              string     `json:"id"`
+	Email           string     `json:"email"`
+	PasswordHash    string     `json:"-"`
+	FullName        string     `json:"fullName"`
+	Mobile          *string    `json:"mobile,omitempty"`
+	Status          string     `json:"status"` // "active", "unverified", "suspended"
+	VerifiedAt      *time.Time `json:"verifiedAt"`
+	EmailVerifiedAt *time.Time `json:"emailVerifiedAt,omitempty"`
+	CreatedAt       time.Time  `json:"createdAt"`
+	UpdatedAt       time.Time  `json:"updatedAt"`
 }
 
 type RefreshSession struct {

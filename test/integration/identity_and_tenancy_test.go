@@ -155,7 +155,7 @@ func TestIdentityAndTenancyLifecycle(t *testing.T) {
 		rec := doRequest(t, handler, http.MethodPost, "/api/v1/auth/register", "", map[string]string{
 			"email":        aliceEmail,
 			"password":     "SuperPassword123!",
-			"name":         "Alice Baker",
+			"fullName":     "Alice Baker",
 			"businessName": "Alice's Artisan Bakery",
 		})
 		if rec.Code != http.StatusCreated {
@@ -172,6 +172,9 @@ func TestIdentityAndTenancyLifecycle(t *testing.T) {
 		if resp.Data.User.Email != aliceEmail {
 			t.Fatalf("user email = %q, want %q", resp.Data.User.Email, aliceEmail)
 		}
+		if resp.Data.User.FullName != "Alice Baker" {
+			t.Fatalf("user fullName = %q, want Alice Baker", resp.Data.User.FullName)
+		}
 	})
 
 	// 2. Prevent Duplicate Registration
@@ -179,7 +182,7 @@ func TestIdentityAndTenancyLifecycle(t *testing.T) {
 		rec := doRequest(t, handler, http.MethodPost, "/api/v1/auth/register", "", map[string]string{
 			"email":    aliceEmail,
 			"password": "AnotherPassword123!",
-			"name":     "Alice Clone",
+			"fullName": "Alice Clone",
 		})
 		if rec.Code != http.StatusConflict {
 			t.Fatalf("duplicate register status = %d, want 409", rec.Code)
@@ -264,7 +267,7 @@ func TestIdentityAndTenancyLifecycle(t *testing.T) {
 		rec := doRequest(t, handler, http.MethodPost, "/api/v1/auth/register", "", map[string]string{
 			"email":        bobEmail,
 			"password":     "BobsPassword123!",
-			"name":         "Bob Builder",
+			"fullName":     "Bob Builder",
 			"businessName": "Bob's Auto Garage",
 		})
 		if rec.Code != http.StatusCreated {
@@ -320,7 +323,7 @@ func TestIdentityAndTenancyLifecycle(t *testing.T) {
 		carolReg := doRequest(t, handler, http.MethodPost, "/api/v1/auth/register", "", map[string]string{
 			"email":    carolEmail,
 			"password": "CarolsPassword123!",
-			"name":     "Carol Cashier",
+			"fullName": "Carol Cashier",
 		})
 		if carolReg.Code != http.StatusCreated {
 			t.Fatalf("carol register status = %d", carolReg.Code)

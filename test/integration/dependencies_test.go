@@ -23,7 +23,7 @@ func TestPostgresAndRedisAreReachable(t *testing.T) {
 	defer cancel()
 
 	database, err := postgres.Open(ctx, postgres.Config{
-		URL:             environmentOrDefault("TEST_DATABASE_URL", "postgres://aibos:aibos_local@localhost:5432/aibos?sslmode=disable"),
+		URL:             environmentOrDefault("TEST_DATABASE_URL", "postgres://aibos:aibos_local@localhost:5433/aibos?sslmode=disable"),
 		PoolMax:         4,
 		PoolMin:         1,
 		ConnectTimeout:  3 * time.Second,
@@ -40,7 +40,7 @@ func TestPostgresAndRedisAreReachable(t *testing.T) {
 	}
 
 	cache, err := redisstore.Open(redisstore.Config{
-		URL:           environmentOrDefault("TEST_REDIS_URL", "redis://localhost:6379/0"),
+		URL:           environmentOrDefault("TEST_REDIS_URL", "redis://localhost:6380/0"),
 		DialTimeout:   3 * time.Second,
 		ReadTimeout:   3 * time.Second,
 		WriteTimeout:  3 * time.Second,

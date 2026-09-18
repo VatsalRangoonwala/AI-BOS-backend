@@ -42,10 +42,10 @@ type Membership struct {
 }
 
 type UserSummary struct {
-	ID     string `json:"id"`
-	Email  string `json:"email"`
-	Name   string `json:"name"`
-	Status string `json:"status"`
+	ID       string `json:"id"`
+	Email    string `json:"email"`
+	FullName string `json:"fullName"`
+	Status   string `json:"status"`
 }
 
 type MemberDetail struct {

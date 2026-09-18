@@ -22,8 +22,8 @@ func NewRepository(pool *pgxpool.Pool) *Repository {
 
 func (r *Repository) CreateUser(ctx context.Context, user *User) error {
 	query := `
-		INSERT INTO users (id, email, password_hash, name, status, verified_at, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO users (id, email, password_hash, full_name, mobile, status, verified_at, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`
 	now := time.Now().UTC()
 	user.CreatedAt = now
@@ -34,7 +34,8 @@ func (r *Repository) CreateUser(ctx context.Context, user *User) error {
 		user.ID,
 		user.Email,
 		user.PasswordHash,
-		user.Name,
+		user.FullName,
+		user.Mobile,
 		user.Status,
 		user.VerifiedAt,
 		user.CreatedAt,
@@ -52,7 +53,7 @@ func (r *Repository) CreateUser(ctx context.Context, user *User) error {
 
 func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	query := `
-		SELECT id, email, password_hash, name, status, verified_at, created_at, updated_at
+		SELECT id, email, password_hash, full_name, mobile, status, verified_at, created_at, updated_at
 		FROM users
 		WHERE LOWER(email) = LOWER($1)
 	`
@@ -61,7 +62,8 @@ func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*User, e
 		&u.ID,
 		&u.Email,
 		&u.PasswordHash,
-		&u.Name,
+		&u.FullName,
+		&u.Mobile,
 		&u.Status,
 		&u.VerifiedAt,
 		&u.CreatedAt,
@@ -73,12 +75,13 @@ func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*User, e
 		}
 		return nil, fmt.Errorf("get user by email: %w", err)
 	}
+	u.EmailVerifiedAt = u.VerifiedAt
 	return &u, nil
 }
 
 func (r *Repository) GetUserByID(ctx context.Context, id string) (*User, error) {
 	query := `
-		SELECT id, email, password_hash, name, status, verified_at, created_at, updated_at
+		SELECT id, email, password_hash, full_name, mobile, status, verified_at, created_at, updated_at
 		FROM users
 		WHERE id = $1
 	`
@@ -87,7 +90,8 @@ func (r *Repository) GetUserByID(ctx context.Context, id string) (*User, error) 
 		&u.ID,
 		&u.Email,
 		&u.PasswordHash,
-		&u.Name,
+		&u.FullName,
+		&u.Mobile,
 		&u.Status,
 		&u.VerifiedAt,
 		&u.CreatedAt,
@@ -99,6 +103,7 @@ func (r *Repository) GetUserByID(ctx context.Context, id string) (*User, error) 
 		}
 		return nil, fmt.Errorf("get user by id: %w", err)
 	}
+	u.EmailVerifiedAt = u.VerifiedAt
 	return &u, nil
 }
 

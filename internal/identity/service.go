@@ -16,7 +16,8 @@ import (
 type RegisterInput struct {
 	Email        string
 	Password     string
-	Name         string
+	FullName     string
+	Mobile       string
 	BusinessName string
 }
 
@@ -66,12 +67,12 @@ func NewService(
 
 func (s *Service) Register(ctx context.Context, input RegisterInput, meta RequestMeta) (*AuthTokens, error) {
 	input.Email = strings.ToLower(strings.TrimSpace(input.Email))
-	input.Name = strings.TrimSpace(input.Name)
+	fullName := strings.TrimSpace(input.FullName)
 	if len(input.Password) < 8 {
 		return nil, ErrPasswordTooShort
 	}
-	if input.Email == "" || input.Name == "" {
-		return nil, errors.New("email and name are required")
+	if input.Email == "" || fullName == "" {
+		return nil, errors.New("email and fullName are required")
 	}
 
 	passwordHash, err := security.HashPassword(input.Password)
@@ -84,8 +85,11 @@ func (s *Service) Register(ctx context.Context, input RegisterInput, meta Reques
 		ID:           userID,
 		Email:        input.Email,
 		PasswordHash: passwordHash,
-		Name:         input.Name,
+		FullName:     fullName,
 		Status:       "active",
+	}
+	if trimmedMobile := strings.TrimSpace(input.Mobile); trimmedMobile != "" {
+		user.Mobile = &trimmedMobile
 	}
 
 	if err := s.userRepo.CreateUser(ctx, user); err != nil {
@@ -95,7 +99,7 @@ func (s *Service) Register(ctx context.Context, input RegisterInput, meta Reques
 	// Create initial business tenant if specified, or default to a business with user's name
 	bizName := strings.TrimSpace(input.BusinessName)
 	if bizName == "" {
-		bizName = fmt.Sprintf("%s's Store", user.Name)
+		bizName = fmt.Sprintf("%s's Store", user.FullName)
 	}
 	if s.businessRepo != nil {
 		biz := &businesses.Business{
