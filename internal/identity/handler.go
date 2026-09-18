@@ -84,13 +84,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		RequestID: httpserver.RequestIDFromContext(r.Context()),
 	}
 
-	tokens, err := h.identityService.Register(r.Context(), RegisterInput{
-		Email:        req.Email,
-		Password:     req.Password,
-		FullName:     req.FullName,
-		Mobile:       req.Mobile,
-		BusinessName: req.BusinessName,
-	}, meta)
+	tokens, err := h.identityService.Register(r.Context(), RegisterInput(req), meta)
 	if err != nil {
 		if errors.Is(err, ErrUserAlreadyExists) {
 			httpserver.RespondError(w, r, http.StatusConflict, "user_already_exists", "An account with this email already exists", nil, nil)
