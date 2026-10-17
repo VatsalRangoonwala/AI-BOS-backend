@@ -492,6 +492,435 @@ paths:
         "404":
           $ref: "#/components/responses/NotFoundError"
 
+  /api/v1/businesses/{businessId}/customers:
+    parameters:
+      - $ref: "#/components/parameters/BusinessId"
+    get:
+      operationId: listCustomers
+      summary: List customers
+      description: Returns a paginated list of active customers for the business with optional text search.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          description: Search query matching name, phone, or email.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of items to return (1-100).
+          schema:
+            type: integer
+            default: 25
+        - name: cursor
+          in: query
+          description: Opaque pagination cursor.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated customer list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerListResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+    post:
+      operationId: createCustomer
+      summary: Create customer
+      description: Adds a new customer profile to the business.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCustomerRequest"
+      responses:
+        "201":
+          description: Customer created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/businesses/{businessId}/customers/{customerId}:
+    parameters:
+      - $ref: "#/components/parameters/BusinessId"
+      - name: customerId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getCustomer
+      summary: Get customer details
+      description: Retrieves customer profile by ID within the active tenant.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Customer profile details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerDetailResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    patch:
+      operationId: updateCustomer
+      summary: Update customer
+      description: Updates customer profile fields.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCustomerRequest"
+      responses:
+        "200":
+          description: Customer profile updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      operationId: archiveCustomer
+      summary: Archive customer
+      description: Soft-deletes/archives the customer profile.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Customer archived.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessageResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/v1/businesses/{businessId}/customers/{customerId}/ledger:
+    parameters:
+      - $ref: "#/components/parameters/BusinessId"
+      - name: customerId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getCustomerLedger
+      summary: Get customer ledger summary
+      description: Retrieves customer outstanding receivables, billing totals, and payment summaries.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Customer ledger summary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerLedgerResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/v1/businesses/{businessId}/products:
+    parameters:
+      - $ref: "#/components/parameters/BusinessId"
+    get:
+      operationId: listProducts
+      summary: List products
+      description: Returns a paginated list of catalog products with current stock levels.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          description: Search query matching name or SKU.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated product list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductListResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+    post:
+      operationId: createProduct
+      summary: Create product
+      description: Adds a new product to the catalog with optional initial stock.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductRequest"
+      responses:
+        "201":
+          description: Product created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/businesses/{businessId}/products/{productId}:
+    parameters:
+      - $ref: "#/components/parameters/BusinessId"
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getProduct
+      summary: Get product details
+      description: Retrieves product details and stock balances by ID.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Product details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDetailResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    patch:
+      operationId: updateProduct
+      summary: Update product
+      description: Updates product metadata, prices, or reorder levels.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProductRequest"
+      responses:
+        "200":
+          description: Product updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      operationId: archiveProduct
+      summary: Archive product
+      description: Soft-deletes/archives the product from active catalog.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Product archived.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessageResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/v1/businesses/{businessId}/products/{productId}/movements:
+    parameters:
+      - $ref: "#/components/parameters/BusinessId"
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: listStockMovements
+      summary: List product stock movements
+      description: Retrieves audit trail of stock adjustments, inward receipts, and sales movements.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated stock movements.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockMovementListResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+
+  /api/v1/businesses/{businessId}/inventory:
+    parameters:
+      - $ref: "#/components/parameters/BusinessId"
+    get:
+      operationId: listInventory
+      summary: List inventory levels
+      description: Returns inventory balances with available quantities and low-stock warnings.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: lowStock
+          in: query
+          description: Filter items where available quantity is at or below reorder level.
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated inventory levels.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryListResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+
+  /api/v1/businesses/{businessId}/inventory/adjustments:
+    parameters:
+      - $ref: "#/components/parameters/BusinessId"
+    post:
+      operationId: recordStockAdjustment
+      summary: Adjust inventory stock
+      description: Records an append-only stock movement and atomically updates the balance. Rejects negative stock.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          description: Optional idempotency key to prevent double adjustment.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockAdjustmentRequest"
+      responses:
+        "200":
+          description: Stock movement recorded and balance updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockMovementDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+
 components:
   securitySchemes:
     BearerAuth:
@@ -1094,3 +1523,439 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/MemberData"
+
+    Customer:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - businessId
+        - name
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        businessId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        archivedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateCustomerRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        address:
+          type: string
+        notes:
+          type: string
+
+    UpdateCustomerRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        address:
+          type: string
+        notes:
+          type: string
+
+    CustomerDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/StandardSuccessResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/Customer"
+
+    CustomerListResponse:
+      allOf:
+        - $ref: "#/components/schemas/StandardSuccessResponse"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                customers:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Customer"
+                nextCursor:
+                  type: string
+                  nullable: true
+
+    CustomerLedgerSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - customerId
+        - totalBilledMinor
+        - totalPaidMinor
+        - outstandingMinor
+        - currency
+      properties:
+        customerId:
+          type: string
+          format: uuid
+        totalBilledMinor:
+          type: integer
+        totalPaidMinor:
+          type: integer
+        outstandingMinor:
+          type: integer
+        currency:
+          type: string
+
+    CustomerLedgerResponse:
+      allOf:
+        - $ref: "#/components/schemas/StandardSuccessResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/CustomerLedgerSummary"
+
+    Product:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - businessId
+        - name
+        - sku
+        - unit
+        - salePriceMinor
+        - costPriceMinor
+        - currency
+        - taxRateBasisPoints
+        - reorderLevel
+        - onHand
+        - reserved
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        businessId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 64
+        description:
+          type: string
+          nullable: true
+        unit:
+          type: string
+        salePriceMinor:
+          type: integer
+        costPriceMinor:
+          type: integer
+        currency:
+          type: string
+        taxRateBasisPoints:
+          type: integer
+        reorderLevel:
+          type: integer
+        onHand:
+          type: integer
+        reserved:
+          type: integer
+        archivedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateProductRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - sku
+        - salePriceMinor
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 64
+        description:
+          type: string
+        unit:
+          type: string
+          default: unit
+        salePriceMinor:
+          type: integer
+          minimum: 0
+        costPriceMinor:
+          type: integer
+          minimum: 0
+        currency:
+          type: string
+          default: INR
+        taxRateBasisPoints:
+          type: integer
+          minimum: 0
+          default: 0
+        reorderLevel:
+          type: integer
+          minimum: 0
+          default: 0
+        initialStock:
+          type: integer
+          minimum: 0
+          default: 0
+
+    UpdateProductRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        description:
+          type: string
+        unit:
+          type: string
+        salePriceMinor:
+          type: integer
+          minimum: 0
+        costPriceMinor:
+          type: integer
+          minimum: 0
+        taxRateBasisPoints:
+          type: integer
+          minimum: 0
+        reorderLevel:
+          type: integer
+          minimum: 0
+
+    ProductDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/StandardSuccessResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/Product"
+
+    ProductListResponse:
+      allOf:
+        - $ref: "#/components/schemas/StandardSuccessResponse"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                products:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Product"
+                nextCursor:
+                  type: string
+                  nullable: true
+
+    ProductInventoryItem:
+      type: object
+      additionalProperties: false
+      required:
+        - productId
+        - productName
+        - sku
+        - unit
+        - onHand
+        - reserved
+        - available
+        - reorderLevel
+        - isLowStock
+      properties:
+        productId:
+          type: string
+          format: uuid
+        productName:
+          type: string
+        sku:
+          type: string
+        unit:
+          type: string
+        onHand:
+          type: integer
+        reserved:
+          type: integer
+        available:
+          type: integer
+        reorderLevel:
+          type: integer
+        isLowStock:
+          type: boolean
+
+    InventoryListResponse:
+      allOf:
+        - $ref: "#/components/schemas/StandardSuccessResponse"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                inventory:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ProductInventoryItem"
+                nextCursor:
+                  type: string
+                  nullable: true
+
+    StockAdjustmentRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - productId
+        - quantity
+      properties:
+        productId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          description: Signed quantity delta (positive to add stock, negative to deduct)
+        movementType:
+          type: string
+          enum: [adjustment, received, sale, returned, damaged, transfer]
+        notes:
+          type: string
+        idempotencyKey:
+          type: string
+
+    StockMovement:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - businessId
+        - productId
+        - quantity
+        - movementType
+        - sourceType
+        - occurredAt
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        businessId:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+        movementType:
+          type: string
+        sourceType:
+          type: string
+        sourceId:
+          type: string
+          format: uuid
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdBy:
+          type: string
+          format: uuid
+          nullable: true
+        idempotencyKey:
+          type: string
+          nullable: true
+        occurredAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    StockMovementDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/StandardSuccessResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/StockMovement"
+
+    StockMovementListResponse:
+      allOf:
+        - $ref: "#/components/schemas/StandardSuccessResponse"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                movements:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/StockMovement"
+                nextCursor:
+                  type: string
+                  nullable: true
+

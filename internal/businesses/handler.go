@@ -10,12 +10,26 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type Handler struct {
-	businessService *Service
+type SubRouters struct {
+	Customers chi.Router
+	Products  chi.Router
+	Inventory chi.Router
 }
 
-func NewHandler(businessService *Service) *Handler {
-	return &Handler{businessService: businessService}
+type Handler struct {
+	businessService *Service
+	subRouters      SubRouters
+}
+
+func NewHandler(businessService *Service, subRouters ...SubRouters) *Handler {
+	var sr SubRouters
+	if len(subRouters) > 0 {
+		sr = subRouters[0]
+	}
+	return &Handler{
+		businessService: businessService,
+		subRouters:      sr,
+	}
 }
 
 func (h *Handler) Routes(jwtSecret []byte) chi.Router {
@@ -37,6 +51,16 @@ func (h *Handler) Routes(jwtSecret []byte) chi.Router {
 		b.With(httpserver.RequireTenantRole("owner")).Post("/invitations", h.InviteMember)
 		b.With(httpserver.RequireTenantRole("owner")).Patch("/members/{memberId}", h.UpdateMember)
 		b.With(httpserver.RequireTenantRole("owner")).Delete("/members/{memberId}", h.RemoveMember)
+
+		if h.subRouters.Customers != nil {
+			b.Mount("/customers", h.subRouters.Customers)
+		}
+		if h.subRouters.Products != nil {
+			b.Mount("/products", h.subRouters.Products)
+		}
+		if h.subRouters.Inventory != nil {
+			b.Mount("/inventory", h.subRouters.Inventory)
+		}
 	})
 
 	return r

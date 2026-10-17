@@ -10,6 +10,8 @@ import (
 
 	"github.com/VatsalRangoonwala/AI-BOS-backend/internal/audit"
 	"github.com/VatsalRangoonwala/AI-BOS-backend/internal/businesses"
+	"github.com/VatsalRangoonwala/AI-BOS-backend/internal/catalog"
+	"github.com/VatsalRangoonwala/AI-BOS-backend/internal/customers"
 	"github.com/VatsalRangoonwala/AI-BOS-backend/internal/identity"
 	"github.com/VatsalRangoonwala/AI-BOS-backend/internal/platform/config"
 	"github.com/VatsalRangoonwala/AI-BOS-backend/internal/platform/httpserver"
@@ -71,9 +73,21 @@ func run(bootstrapLogger *slog.Logger) error {
 	auditRepo := audit.NewRepository(database.RawPool())
 	rateLimiter := ratelimit.New(cache.RawClient())
 
+	customerRepo := customers.NewRepository(database.RawPool())
+	customerService := customers.NewService(customerRepo, auditRepo)
+	customerHandler := customers.NewHandler(customerService)
+
+	catalogRepo := catalog.NewRepository(database.RawPool())
+	catalogService := catalog.NewService(catalogRepo, auditRepo)
+	catalogHandler := catalog.NewHandler(catalogService)
+
 	bizRepo := businesses.NewRepository(database.RawPool())
 	bizService := businesses.NewService(bizRepo, auditRepo)
-	bizHandler := businesses.NewHandler(bizService)
+	bizHandler := businesses.NewHandler(bizService, businesses.SubRouters{
+		Customers: customerHandler.Routes(),
+		Products:  catalogHandler.ProductRoutes(),
+		Inventory: catalogHandler.InventoryRoutes(),
+	})
 
 	userRepo := identity.NewRepository(database.RawPool())
 	identityService := identity.NewService(
