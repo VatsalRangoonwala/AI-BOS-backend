@@ -87,6 +87,13 @@ func (r *Repository) Update(ctx context.Context, businessID, customerID string, 
 		return nil, err
 	}
 
+	if input.Name == nil && input.FullName != nil {
+		input.Name = input.FullName
+	}
+	if input.Phone == nil && input.Mobile != nil {
+		input.Phone = input.Mobile
+	}
+
 	if input.Name != nil {
 		trimmed := strings.TrimSpace(*input.Name)
 		if trimmed == "" {

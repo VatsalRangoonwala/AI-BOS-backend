@@ -18,6 +18,8 @@ type Product struct {
 	BusinessID         string     `json:"businessId"`
 	Name               string     `json:"name"`
 	SKU                string     `json:"sku"`
+	Barcode            *string    `json:"barcode,omitempty"`
+	Category           string     `json:"category"`
 	Description        *string    `json:"description,omitempty"`
 	Unit               string     `json:"unit"`
 	SalePriceMinor     int64      `json:"salePriceMinor"`
@@ -72,6 +74,8 @@ type StockMovement struct {
 type CreateProductInput struct {
 	Name               string  `json:"name"`
 	SKU                string  `json:"sku"`
+	Barcode            *string `json:"barcode,omitempty"`
+	Category           string  `json:"category,omitempty"`
 	Description        *string `json:"description,omitempty"`
 	Unit               string  `json:"unit,omitempty"`
 	SalePriceMinor     int64   `json:"salePriceMinor"`
@@ -84,6 +88,8 @@ type CreateProductInput struct {
 
 type UpdateProductInput struct {
 	Name               *string `json:"name,omitempty"`
+	Barcode            *string `json:"barcode,omitempty"`
+	Category           *string `json:"category,omitempty"`
 	Description        *string `json:"description,omitempty"`
 	Unit               *string `json:"unit,omitempty"`
 	SalePriceMinor     *int64  `json:"salePriceMinor,omitempty"`

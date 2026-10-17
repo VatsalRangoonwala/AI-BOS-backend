@@ -1693,6 +1693,12 @@ components:
           type: string
           minLength: 1
           maxLength: 64
+        barcode:
+          type: string
+          nullable: true
+        category:
+          type: string
+          default: General
         description:
           type: string
           nullable: true
@@ -1739,6 +1745,11 @@ components:
           type: string
           minLength: 1
           maxLength: 64
+        barcode:
+          type: string
+        category:
+          type: string
+          default: General
         description:
           type: string
         unit:
@@ -1774,6 +1785,10 @@ components:
           type: string
           minLength: 1
           maxLength: 150
+        barcode:
+          type: string
+        category:
+          type: string
         description:
           type: string
         unit:

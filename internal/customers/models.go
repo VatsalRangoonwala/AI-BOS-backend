@@ -32,19 +32,23 @@ type CustomerLedgerSummary struct {
 }
 
 type CreateCustomerInput struct {
-	Name    string  `json:"name"`
-	Phone   *string `json:"phone,omitempty"`
-	Email   *string `json:"email,omitempty"`
-	Address *string `json:"address,omitempty"`
-	Notes   *string `json:"notes,omitempty"`
+	Name     string  `json:"name"`
+	FullName string  `json:"fullName,omitempty"`
+	Phone    *string `json:"phone,omitempty"`
+	Mobile   *string `json:"mobile,omitempty"`
+	Email    *string `json:"email,omitempty"`
+	Address  *string `json:"address,omitempty"`
+	Notes    *string `json:"notes,omitempty"`
 }
 
 type UpdateCustomerInput struct {
-	Name    *string `json:"name,omitempty"`
-	Phone   *string `json:"phone,omitempty"`
-	Email   *string `json:"email,omitempty"`
-	Address *string `json:"address,omitempty"`
-	Notes   *string `json:"notes,omitempty"`
+	Name     *string `json:"name,omitempty"`
+	FullName *string `json:"fullName,omitempty"`
+	Phone    *string `json:"phone,omitempty"`
+	Mobile   *string `json:"mobile,omitempty"`
+	Email    *string `json:"email,omitempty"`
+	Address  *string `json:"address,omitempty"`
+	Notes    *string `json:"notes,omitempty"`
 }
 
 type ListCustomersQuery struct {

@@ -48,7 +48,7 @@ func New(cfg Config, logger *slog.Logger, dependencies Dependencies, hooks obser
 	router.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   cfg.FrontendOrigins,
 		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "Idempotency-Key", "If-Match", requestIDHeader},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "Idempotency-Key", "If-Match", "X-Business-ID", requestIDHeader},
 		ExposedHeaders:   []string{requestIDHeader},
 		AllowCredentials: true,
 		MaxAge:           300,

@@ -59,10 +59,24 @@ func (s *Service) CreateProduct(ctx context.Context, businessID, userID string, 
 		currency = "INR"
 	}
 
+	category := strings.TrimSpace(input.Category)
+	if category == "" {
+		category = "General"
+	}
+	var barcodePtr *string
+	if input.Barcode != nil {
+		trimmed := strings.TrimSpace(*input.Barcode)
+		if trimmed != "" {
+			barcodePtr = &trimmed
+		}
+	}
+
 	product := &Product{
 		BusinessID:         businessID,
 		Name:               name,
 		SKU:                sku,
+		Barcode:            barcodePtr,
+		Category:           category,
 		Description:        input.Description,
 		Unit:               unit,
 		SalePriceMinor:     input.SalePriceMinor,

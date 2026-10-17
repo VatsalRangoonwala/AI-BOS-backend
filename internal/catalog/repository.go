@@ -42,18 +42,24 @@ func (r *Repository) CreateProduct(ctx context.Context, p *Product, initialStock
 		p.Currency = "INR"
 	}
 
+	if p.Category == "" {
+		p.Category = "General"
+	}
+
 	queryProduct := `
 		INSERT INTO products (
-			id, business_id, name, sku, description, unit,
+			id, business_id, name, sku, barcode, category, description, unit,
 			sale_price_minor, cost_price_minor, currency,
 			tax_rate_basis_points, reorder_level, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 	`
 	_, err = tx.Exec(ctx, queryProduct,
 		p.ID,
 		p.BusinessID,
 		p.Name,
 		p.SKU,
+		p.Barcode,
+		p.Category,
 		p.Description,
 		p.Unit,
 		p.SalePriceMinor,
@@ -123,7 +129,7 @@ func (r *Repository) CreateProduct(ctx context.Context, p *Product, initialStock
 func (r *Repository) GetProductByID(ctx context.Context, businessID, productID string) (*Product, error) {
 	query := `
 		SELECT
-			p.id, p.business_id, p.name, p.sku, p.description, p.unit,
+			p.id, p.business_id, p.name, p.sku, p.barcode, p.category, p.description, p.unit,
 			p.sale_price_minor, p.cost_price_minor, p.currency,
 			p.tax_rate_basis_points, p.reorder_level,
 			COALESCE(ib.on_hand, 0), COALESCE(ib.reserved, 0),
@@ -138,6 +144,8 @@ func (r *Repository) GetProductByID(ctx context.Context, businessID, productID s
 		&p.BusinessID,
 		&p.Name,
 		&p.SKU,
+		&p.Barcode,
+		&p.Category,
 		&p.Description,
 		&p.Unit,
 		&p.SalePriceMinor,
@@ -174,6 +182,20 @@ func (r *Repository) UpdateProduct(ctx context.Context, businessID, productID st
 		}
 		existing.Name = trimmed
 	}
+	if input.Barcode != nil {
+		trimmed := strings.TrimSpace(*input.Barcode)
+		if trimmed == "" {
+			existing.Barcode = nil
+		} else {
+			existing.Barcode = &trimmed
+		}
+	}
+	if input.Category != nil {
+		trimmed := strings.TrimSpace(*input.Category)
+		if trimmed != "" {
+			existing.Category = trimmed
+		}
+	}
 	if input.Description != nil {
 		existing.Description = input.Description
 	}
@@ -196,12 +218,14 @@ func (r *Repository) UpdateProduct(ctx context.Context, businessID, productID st
 
 	query := `
 		UPDATE products
-		SET name = $1, description = $2, unit = $3, sale_price_minor = $4,
-		    cost_price_minor = $5, tax_rate_basis_points = $6, reorder_level = $7, updated_at = $8
-		WHERE id = $9 AND business_id = $10 AND archived_at IS NULL
+		SET name = $1, barcode = $2, category = $3, description = $4, unit = $5, sale_price_minor = $6,
+		    cost_price_minor = $7, tax_rate_basis_points = $8, reorder_level = $9, updated_at = $10
+		WHERE id = $11 AND business_id = $12 AND archived_at IS NULL
 	`
 	tag, err := r.pool.Exec(ctx, query,
 		existing.Name,
+		existing.Barcode,
+		existing.Category,
 		existing.Description,
 		existing.Unit,
 		existing.SalePriceMinor,
@@ -265,7 +289,7 @@ func (r *Repository) ListProducts(ctx context.Context, businessID string, q List
 	queryBuilder := strings.Builder{}
 	queryBuilder.WriteString(`
 		SELECT
-			p.id, p.business_id, p.name, p.sku, p.description, p.unit,
+			p.id, p.business_id, p.name, p.sku, p.barcode, p.category, p.description, p.unit,
 			p.sale_price_minor, p.cost_price_minor, p.currency,
 			p.tax_rate_basis_points, p.reorder_level,
 			COALESCE(ib.on_hand, 0), COALESCE(ib.reserved, 0),
@@ -279,7 +303,7 @@ func (r *Repository) ListProducts(ctx context.Context, businessID string, q List
 		searchTerm := "%" + strings.TrimSpace(q.Query) + "%"
 		args = append(args, searchTerm)
 		paramIndex := len(args)
-		queryBuilder.WriteString(fmt.Sprintf(" AND (p.name ILIKE $%d OR p.sku ILIKE $%d)", paramIndex, paramIndex))
+		queryBuilder.WriteString(fmt.Sprintf(" AND (p.name ILIKE $%d OR p.sku ILIKE $%d OR p.category ILIKE $%d)", paramIndex, paramIndex, paramIndex))
 	}
 
 	if !cursorCreatedAt.IsZero() && cursorID != "" {
@@ -305,6 +329,8 @@ func (r *Repository) ListProducts(ctx context.Context, businessID string, q List
 			&p.BusinessID,
 			&p.Name,
 			&p.SKU,
+			&p.Barcode,
+			&p.Category,
 			&p.Description,
 			&p.Unit,
 			&p.SalePriceMinor,

@@ -28,13 +28,21 @@ func NewService(repo *Repository, auditLogger audit.Logger) *Service {
 func (s *Service) CreateCustomer(ctx context.Context, businessID, userID string, input CreateCustomerInput, meta RequestMeta) (*Customer, error) {
 	name := strings.TrimSpace(input.Name)
 	if name == "" {
+		name = strings.TrimSpace(input.FullName)
+	}
+	if name == "" {
 		return nil, ErrInvalidCustomerName
+	}
+
+	phone := input.Phone
+	if phone == nil && input.Mobile != nil {
+		phone = input.Mobile
 	}
 
 	customer := &Customer{
 		BusinessID: businessID,
 		Name:       name,
-		Phone:      input.Phone,
+		Phone:      phone,
 		Email:      input.Email,
 		Address:    input.Address,
 		Notes:      input.Notes,
